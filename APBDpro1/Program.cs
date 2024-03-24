@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace APBDpro1
@@ -12,9 +15,128 @@ namespace APBDpro1
         }
     }
 
+    public class ContenerShip
+    {
+        private string name;
+        private double maxSpeedInKnots;
+        private int maxContenerCount;
+        private double maxContenerLoad;
+        private List<Contener> contenerList = new List<Contener>();
+        private double contenerLoad;
+
+        public ContenerShip(string name, double maxSpeedInKnots, int maxContenerCount, double maxContenerLoad)
+        {
+            this.name = name;
+            this.maxSpeedInKnots = maxSpeedInKnots;
+            this.maxContenerCount = maxContenerCount;
+            this.maxContenerLoad = maxContenerLoad;
+            
+        }
+
+        public void loadContener(Contener contener)
+        {
+            if (maxContenerCount >= contenerList.Count + 1 && maxContenerLoad >= contenerLoad + contener.getMass())
+            {
+                contenerList.Add(contener);
+                contenerLoad = countContenerMass();
+            }
+            else Console.WriteLine("Ships cargo full");
+        }
+
+        public double countContenerMass()
+        {
+            double mass = 0;
+            for (int i = 0; i < contenerList.Count; i++)
+            {
+                mass += contenerList[i].getMass();
+            }
+            return mass;
+        }
+
+        public void getContenrnerList()
+        {
+            foreach (Contener c in contenerList) Console.WriteLine(c.getSerialNumber());
+        }
+
+        public void removeContener(string serialNumber)
+        {
+            for (int i = 0; i < contenerList.Count; i++)
+            {
+                if (contenerList[i].getSerialNumber().Equals(serialNumber))
+                {
+                    contenerList.RemoveAt(i);
+                    contenerLoad = countContenerMass();
+                }
+            }
+        }
+        public void removeContener(Contener contenerToRemove)
+        {
+            removeContener(contenerToRemove.getSerialNumber());
+        }
+
+        public void switchContener(Contener toPut, Contener toOut)
+        {
+            for (int i = 0; i < contenerList.Count; i++)
+            {
+                if (contenerList[i].getSerialNumber().Equals(toOut.getSerialNumber()))
+                {
+                    contenerList[i] = toPut;
+                    contenerLoad = countContenerMass();
+                }
+            }
+        }
+
+        public List<Contener> getContenerList()
+        {
+            return contenerList;
+        }
+        public static void changeContenersShip(ContenerShip oldOwner, ContenerShip newOwner, Contener toSwitch)
+        {
+            List<Contener> tmpList = oldOwner.getContenerList();
+            
+            for (int i = 0; i < tmpList.Count; i++)
+            {
+                if (tmpList[i].getSerialNumber().Equals(toSwitch.getSerialNumber()))
+                {
+                    newOwner.loadContener(tmpList[i]);
+                    oldOwner.removeContener(tmpList[i]);
+                }
+            }
+        }
+        
+        
+
+        public void showInfoContener(Contener contener)
+        {
+            showInfoContener(contener.getSerialNumber());
+        }
+        public void showInfoContener(string serialNumber)
+        {
+            for (int i = 0; i < contenerList.Count; i++)
+            {
+                if (contenerList[i].getSerialNumber().Equals(serialNumber))
+                {
+                    Console.WriteLine(contenerList[i]);
+                }
+            }
+        }
+
+        public string showShipInfo()
+        {
+            return "Name: " + name + "\n" +
+                   "Max speed(in knots): " + maxSpeedInKnots + "\n" +
+                   "Max contener count: " + maxContenerCount + "\n" +
+                   "Contener count: " + contenerList.Count + "\n" +
+                   "Max contener load: " + maxContenerLoad + "\n" +
+                   "Contener load: " + contenerLoad;
+        }
+        
+    }
+    
 
     public class Contener : IHazardNotifier
     {
+        private string inputType;
         private double mass;
         private double heigh;
         private double contenerMass;
@@ -35,6 +157,7 @@ namespace APBDpro1
             this.depth = depth;
             this.serialNumber = serialNumber;
             this.maxLoad = maxLoad;
+            inputType = (string)serialNumber.Split('-')[1];
 
             string[] serialNumberParts = serialNumber.Split('-');
 
@@ -58,6 +181,8 @@ namespace APBDpro1
             this.serialNumber = serialNumber;
             this.maxLoad = maxLoad;
             this.danger = danger;
+            inputType = (string)serialNumber.Split('-')[1];
+
 
             string[] serialNumberParts = serialNumber.Split('-');
 
@@ -81,6 +206,8 @@ namespace APBDpro1
             this.serialNumber = serialNumber;
             this.maxLoad = maxLoad;
             this.pressure = pressure;
+            inputType = (string)serialNumber.Split('-')[1];
+
 
             string[] serialNumberParts = serialNumber.Split('-');
 
@@ -105,6 +232,8 @@ namespace APBDpro1
             this.maxLoad = maxLoad;
             this.productType = productType;
             this.tempereture = tempereture;
+            inputType = (string)serialNumber.Split('-')[1];
+
             
 
             string[] serialNumberParts = serialNumber.Split('-');
@@ -119,14 +248,19 @@ namespace APBDpro1
                 }
             }
         }
-        
 
+        public double getMass()
+        {
+            return mass + contenerMass;
+        }
 
-
+        public string getSerialNumber()
+        {
+            return serialNumber;
+        }
         public void emptyIt()
         {
             Console.WriteLine("Emptying contener: "+ serialNumber+"================================================================");
-            string inputType = (string)serialNumber.Split('-')[1];
             switch (inputType)
             {
                 case "L":
@@ -159,8 +293,7 @@ namespace APBDpro1
             {
                 throw new OverfillException(serialNumber);
             }
-
-            string inputType = (string)serialNumber.Split('-')[1];
+            
             switch (inputType)
             {
                 case "L":
@@ -209,7 +342,41 @@ namespace APBDpro1
             Console.WriteLine("You are doing something prohibited in contener: " + serialNumber);
         }
 
+        public override string ToString()
+        {
+            string typeDiff = "";
+            switch (inputType)
+            {
+                case "L":
+                {
+                    typeDiff = "Is dangerous: " + danger;
+                    break;
+                }
+                case "G":
+                {
+                    typeDiff = "Pressure: " + pressure;
+                    break;
+                }
+                case "C":
+                {
+                    typeDiff = "Product Type: " + productType + "\n" +
+                               "Temperture: " + tempereture;
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
 
+            return "Serial Number: " + serialNumber + "\n" +
+                   "Contener Type: " + inputType + "\n" +
+                   "Mass: " + mass + "\n" +
+                   "Heigh: " + heigh + "\n" +
+                   "Contener Mass: " + contenerMass + "\n" +
+                   "Depth: " + depth + "\n" +
+                   typeDiff;
+        }
     }
 
     interface IHazardNotifier
@@ -236,4 +403,5 @@ namespace APBDpro1
         {
         }
     }
+    
 }
